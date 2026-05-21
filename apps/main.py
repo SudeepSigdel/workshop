@@ -1,65 +1,64 @@
 from fastapi import FastAPI, HTTPException, status, Response
 from pydantic import BaseModel
 from typing import Optional, List
+from .models import Post, PostCreate
+from .database import create_table, SESSION
+from sqlmodel import select
 
 app = FastAPI()
+
+@app.on_event("startup")
+def on_startup():
+    create_table()
+
 
 @app.get("/")
 def root():
     return {"message": "Welcome to my API"}
 
-Posts = []
-
-id = 1
-
-class PostBase(BaseModel):
-    title: str
-    content: str
-    published: Optional[bool] = True
-
-class PostCreate(PostBase):
-    pass
-
-class Post(PostBase):
-    id: int
-
 @app.get("/posts", response_model=List[Post])
-def get_all_post():
+def get_all_post(db: SESSION):
+    Posts = db.exec(select(Post)).all()
     return Posts
 
 @app.get("/posts/{id}")
-def get_one_post(id: int):
-    for post in Posts:
-        if post.id == id:
-            return post
+def get_one_post(id: int, db: SESSION):
+    post = db.get(Post, id)
+    if post:
+        return post
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id:{id} not found!")
 
 @app.post("/posts", response_model=Post, status_code=status.HTTP_201_CREATED)
-def create_post(postdata: PostCreate):
-    
-    global id
-    post = Post(id=id, **postdata.dict())
-    id += 1
-    Posts.append(post)
+def create_post(postdata: PostCreate, db: SESSION):
+    post = Post(**postdata.model_dump())
+    db.add(post)
+    db.commit()
+    db.refresh(post)
     return post
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int):
-    for post in Posts:
-        if post.id == id:
-            Posts.remove(post)
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(id: int, db: SESSION):
+    post = db.get(Post, id)
+    if post:
+        db.delete(post)
+        db.commit()
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
         
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id:{id} not found!")
 
 
 @app.put("/posts/{id}", response_model=Post)
-def update_post(id: int, postdata: PostCreate):
-    for post in Posts:
-        if post.id == id:
-            new_post = Post(id=id, **postdata.dict())
-            Posts.remove(post)
-            Posts.append(new_post)
-            return post
-        
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id:{id} not found!")
+def update_post(id: int, postdata: PostCreate, db: SESSION):
+    post= db.get(Post, id)
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id:{id} not found!")
+
+    new_post= postdata.model_dump()
+    for key, value in new_post.items():
+        setattr(post, key, value)
+
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+
+    return post
