@@ -1,8 +1,9 @@
 from sqlmodel import create_engine, Session, SQLModel
 from typing import Annotated
 from fastapi import Depends
+from .config import settings
 
-DATABASE_URL = "postgresql://postgres:password@localhost:5432/workshop"
+DATABASE_URL = f"postgresql://{settings.db_username}:{settings.db_password}@{settings.db_hostname}:{settings.db_port}/{settings.db_name}"
 # postgresql://{username}:{password}@{hostname}:{port}/{databaseName}
 
 engine = create_engine(DATABASE_URL, echo=True)

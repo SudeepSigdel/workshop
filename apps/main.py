@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException, status, Response
-from pydantic import BaseModel
-from typing import Optional, List
+from typing import List
 from .models import Post, PostCreate
 from .database import create_table, SESSION
 from sqlmodel import select
