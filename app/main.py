@@ -12,7 +12,6 @@ app.include_router(users.router)
 app.include_router(login.router)
 app.include_router(posts.router)
 
-
 @app.get("/")
 def root():
     return {"message": "Welcome to my API"}

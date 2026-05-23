@@ -3,7 +3,9 @@ from typing import Annotated
 from fastapi import Depends
 from .config import settings
 
-DATABASE_URL = f"postgresql://{settings.db_username}:{settings.db_password}@{settings.db_hostname}:{settings.db_port}/{settings.db_name}"
+# DATABASE_URL = f"postgresql://{settings.db_username}:{settings.db_password}@{settings.db_hostname}:{settings.db_port}/{settings.db_name}"
+
+DATABASE_URL = settings.db_string
 
 engine = create_engine(DATABASE_URL, echo=True)
 

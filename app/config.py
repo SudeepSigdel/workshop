@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     db_port: str
     db_name: str
 
+    db_string: str
+
     secret_key: str
     algorithm: str
     token_expiration_time: int
